@@ -1,0 +1,153 @@
+#!/usr/bin/env ruby
+require File.expand_path("../config/environment", __dir__)
+
+def display_menu
+  puts "\n=== LinkSaver - Gerenciamento de Contatos ==="
+  puts "1. Adicionar contato"
+  puts "2. Listar contatos"
+  puts "3. Buscar contato"
+  puts "4. Editar contato"
+  puts "5. Deletar contato"
+  puts "6. Exportar para CSV"
+  puts "7. Sair"
+  print "Escolha uma opção: "
+end
+puts ""
+
+# Funções auxiliares
+def add_contact
+  print "Nome: "
+  name = gets.chomp
+  print "Telefone: "
+  phone = gets.chomp
+  print "E-mail: "
+  email = gets.chomp
+
+  contact = Contact.new(name: name, phone: phone, email: email)
+  if contact.save
+    puts "Contato adicionado com sucesso!"
+  else
+    puts "Erro ao adicionar contato: #{contact.errors.full_messages.join(', ')}"
+  end
+end
+
+def list_contacts
+  contacts = Contact.all
+  if contacts.empty?
+    puts "Nenhum contato cadastrado."
+  else
+    contacts.each_with_index do |contact, index|
+      puts "#{index + 1}. #{contact.name} - #{contact.phone} - #{contact.email}"
+    end
+  end
+end
+
+def search_contact
+  print "Digite o nome para buscar: "
+  search_term = gets.chomp
+  results = Contact.where("name LIKE ?", "%#{search_term}%")
+  if results.empty?
+    puts "Nenhum contato encontrado."
+  else
+    results.each_with_index do |contact, index|
+      puts "#{index + 1}. #{contact.name} - #{contact.phone} - #{contact.email}"
+    end
+  end
+end
+
+def edit_contact
+    contacts = Contact.all
+    if contacts.empty?
+      puts "Nenhum contato cadastrado."
+      return
+    end
+  
+    puts "Contatos disponíveis:"
+    contacts.each do |contact|
+      puts "ID: #{contact.id} - #{contact.name} - #{contact.phone} - #{contact.email}"
+    end
+    print "Digite o ID do contato para editar: "
+    id = gets.chomp.to_i
+    contact = Contact.find_by(id: id)
+  
+    if contact.nil?
+      puts "Contato não encontrado."
+      return
+    end
+  
+    print "Novo nome (deixe em branco para manter '#{contact.name}'): "
+    name = gets.chomp
+    print "Novo telefone (deixe em branco para manter '#{contact.phone}'): "
+    phone = gets.chomp
+    print "Novo e-mail (deixe em branco para manter '#{contact.email}'): "
+    email = gets.chomp
+  
+    contact.update(
+      name: name.empty? ? contact.name : name,
+      phone: phone.empty? ? contact.phone : phone,
+      email: email.empty? ? contact.email : email
+    )
+    puts "Contato atualizado com sucesso!"
+  end
+  
+  def delete_contact
+    contacts = Contact.all
+    if contacts.empty?
+      puts "Nenhum contato cadastrado."
+      return
+    end
+  
+    puts "Contatos disponíveis:"
+    contacts.each do |contact|
+      puts "ID: #{contact.id} - #{contact.name} - #{contact.phone} - #{contact.email}"
+    end
+    print "Digite o ID do contato para deletar: "
+    id = gets.chomp.to_i
+    contact = Contact.find_by(id: id)
+  
+    if contact.nil?
+      puts "Contato não encontrado."
+      return
+    end
+  
+    contact.destroy
+    puts "Contato deletado com sucesso!"
+  end
+
+def export_to_csv
+  require 'csv'
+  file_path = "contatos.csv"
+  CSV.open(file_path, "w") do |csv|
+    csv << ["Nome", "Telefone", "E-mail"] # Cabeçalho
+    Contact.all.each do |contact|
+      csv << [contact.name, contact.phone, contact.email]
+    end
+  end
+  puts "Contatos exportados para #{file_path}!"
+end
+
+# Loop principal
+loop do
+  display_menu
+  option = gets.chomp.to_i
+
+  case option
+  when 1
+    add_contact
+  when 2
+    list_contacts
+  when 3
+    search_contact
+  when 4
+    edit_contact
+  when 5
+    delete_contact
+  when 6
+    export_to_csv
+  when 7
+    puts "Saindo..."
+    break
+  else
+    puts "Opção inválida! Tente novamente."
+  end
+end
