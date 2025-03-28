@@ -49,11 +49,15 @@ def add_contact
     return unless gets.chomp.downcase == 's'
   end
 
-  contact = Contact.new(name: name, phone: phone, email: email)
-  if contact.save
-    puts "Contato adicionado: #{contact.name} - #{contact.phone} - #{contact.email}"
-  else
-    puts "Erro ao adicionar: #{contact.errors.full_messages.join(', ')}"
+  begin
+    contact = Contact.new(name: name, phone: phone, email: email)
+    if contact.save
+      puts "Contato adicionado: #{contact.name} - #{contact.phone} - #{contact.email}"
+    else
+      puts "Erro ao adicionar: #{contact.errors.full_messages.join(', ')}"
+    end
+  rescue ActiveRecord::ActiveRecordError => e
+    puts "Erro no banco de dados ao adicionar contato: #{e.message}. Tente novamente."
   end
 end
 
@@ -182,11 +186,15 @@ def edit_contact
   print "Confirmar alterações? (s/n): "
   return puts "Edição cancelada." unless gets.chomp.downcase == 's'
 
-  contact.update(name: new_name, phone: new_phone, email: new_email)
-  if contact.errors.any?
-    puts "Erro ao atualizar: #{contact.errors.full_messages.join(', ')}"
-  else
-    puts "Contato atualizado com sucesso: #{contact.name} - #{contact.phone} - #{contact.email}"
+  begin
+    contact.update(name: new_name, phone: new_phone, email: new_email)
+    if contact.errors.any?
+      puts "Erro ao atualizar: #{contact.errors.full_messages.join(', ')}"
+    else
+      puts "Contato atualizado com sucesso: #{contact.name} - #{contact.phone} - #{contact.email}"
+    end
+  rescue ActiveRecord::ActiveRecordError => e
+    puts "Erro no banco de dados ao atualizar contato: #{e.message}. Tente novamente."
   end
 end
 
@@ -221,8 +229,12 @@ def delete_contact
   print "Tem certeza que deseja deletar este contato? (s/n): "
   return puts "Exclusão cancelada." unless gets.chomp.downcase == 's'
 
-  contact.destroy
-  puts "Contato '#{contact.name}' (ID: #{id}) deletado com sucesso!"
+  begin
+    contact.destroy
+    puts "Contato '#{contact.name}' (ID: #{id}) deletado com sucesso!"
+  rescue ActiveRecord::ActiveRecordError => e
+    puts "Erro no banco de dados ao deletar contato: #{e.message}. Tente novamente."
+  end
 end
 
 def export_to_csv
@@ -238,41 +250,53 @@ def export_to_csv
   filename_input = gets.chomp.strip
   filename = filename_input.empty? ? default_filename : "#{filename_input}.csv"
 
-  require 'csv'
-  file_path = File.expand_path(filename)
-  CSV.open(file_path, "w") do |csv|
-    csv << ["Nome", "Telefone", "E-mail"]
-    contacts.each do |contact|
-      csv << [contact.name, contact.phone, contact.email]
+  begin
+    require 'csv'
+    file_path = File.expand_path(filename)
+    CSV.open(file_path, "w") do |csv|
+      csv << ["Nome", "Telefone", "E-mail"]
+      contacts.each do |contact|
+        csv << [contact.name, contact.phone, contact.email]
+      end
     end
+    puts "Contatos exportados com sucesso para: #{file_path}"
+  rescue Errno::EACCES
+    puts "Erro: Permissão negada para criar o arquivo '#{file_path}'. Tente outro nome ou verifique as permissões."
+  rescue Errno::ENOSPC
+    puts "Erro: Sem espaço em disco para salvar '#{file_path}'. Libere espaço e tente novamente."
+  rescue StandardError => e
+    puts "Erro inesperado ao exportar: #{e.message}. Tente novamente."
   end
-  puts "Contatos exportados com sucesso para: #{file_path}"
 end
 
 loop do
-  display_menu
-  option_input = gets.chomp.strip
+  begin
+    display_menu
+    option_input = gets.chomp.strip
 
-  unless valid_number?(option_input)
-    puts "Erro: Digite um número entre 1 e 7."
-    next
-  end
+    unless valid_number?(option_input)
+      puts "Erro: Digite um número entre 1 e 7."
+      next
+    end
 
-  option = option_input.to_i
-  unless (1..7).include?(option)
-    puts "Erro: Opção inválida! Escolha entre 1 e 7."
-    next
-  end
+    option = option_input.to_i
+    unless (1..7).include?(option)
+      puts "Erro: Opção inválida! Escolha entre 1 e 7."
+      next
+    end
 
-  case option
-  when 1 then add_contact
-  when 2 then list_contacts
-  when 3 then search_contact
-  when 4 then edit_contact
-  when 5 then delete_contact
-  when 6 then export_to_csv
-  when 7
-    puts "Saindo do LinkSaver. Até logo!"
-    break
+    case option
+    when 1 then add_contact
+    when 2 then list_contacts
+    when 3 then search_contact
+    when 4 then edit_contact
+    when 5 then delete_contact
+    when 6 then export_to_csv
+    when 7
+      puts "Saindo do LinkSaver. Até logo!"
+      break
+    end
+  rescue StandardError => e
+    puts "Erro inesperado no menu: #{e.message}. O programa continuará executando."
   end
 end
