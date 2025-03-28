@@ -14,7 +14,7 @@ def display_menu
 end
 
 def valid_number?(input)
-  input.match?(/\A\d+\z/) # Verifica se é um número inteiro
+  input.match?(/\A\d+\z/)
 end
 
 def add_contact
@@ -24,16 +24,36 @@ def add_contact
     puts "Erro: O nome não pode ser vazio."
     return
   end
+
+  if Contact.exists?(name: name)
+    print "Já existe um contato com o nome '#{name}'. Deseja continuar? (s/n): "
+    return unless gets.chomp.downcase == 's'
+  end
+
   print "Telefone (8-15 dígitos, opcional): "
-  phone = gets.chomp.strip
+  phone_input = gets.chomp.strip.gsub(/\D/, '')
+  phone = if phone_input.empty?
+            ""
+          elsif phone_input.length.between?(8, 15)
+            mid = phone_input.length / 2
+            "#{phone_input[0...mid]}-#{phone_input[mid..-1]}"
+          else
+            puts "Aviso: Telefone inválido (mantido como digitado)."
+            phone_input
+          end
+
   print "E-mail (opcional): "
   email = gets.chomp.strip
+  if Contact.exists?(email: email) && !email.empty?
+    print "Já existe um contato com o e-mail '#{email}'. Deseja continuar? (s/n): "
+    return unless gets.chomp.downcase == 's'
+  end
 
   contact = Contact.new(name: name, phone: phone, email: email)
   if contact.save
-    puts "Contato '#{name}' adicionado com sucesso!"
+    puts "Contato adicionado: #{contact.name} - #{contact.phone} - #{contact.email}"
   else
-    puts "Erro ao adicionar contato: #{contact.errors.full_messages.join(', ')}"
+    puts "Erro ao adicionar: #{contact.errors.full_messages.join(', ')}"
   end
 end
 
@@ -158,7 +178,6 @@ def export_to_csv
   puts "Contatos exportados para '#{file_path}' com sucesso!"
 end
 
-# Loop principal
 loop do
   display_menu
   option_input = gets.chomp.strip
