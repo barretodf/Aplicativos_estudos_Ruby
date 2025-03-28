@@ -10,22 +10,28 @@ def display_menu
   puts "5. Deletar contato"
   puts "6. Exportar para CSV"
   puts "7. Sair"
-  print "Escolha uma opção: "
+  print "Escolha uma opção (1-7): "
 end
-puts ""
 
-# Funções auxiliares
+def valid_number?(input)
+  input.match?(/\A\d+\z/) # Verifica se é um número inteiro
+end
+
 def add_contact
   print "Nome: "
-  name = gets.chomp
-  print "Telefone: "
-  phone = gets.chomp
-  print "E-mail: "
-  email = gets.chomp
+  name = gets.chomp.strip
+  if name.empty?
+    puts "Erro: O nome não pode ser vazio."
+    return
+  end
+  print "Telefone (8-15 dígitos, opcional): "
+  phone = gets.chomp.strip
+  print "E-mail (opcional): "
+  email = gets.chomp.strip
 
   contact = Contact.new(name: name, phone: phone, email: email)
   if contact.save
-    puts "Contato adicionado com sucesso!"
+    puts "Contato '#{name}' adicionado com sucesso!"
   else
     puts "Erro ao adicionar contato: #{contact.errors.full_messages.join(', ')}"
   end
@@ -34,120 +40,149 @@ end
 def list_contacts
   contacts = Contact.all
   if contacts.empty?
-    puts "Nenhum contato cadastrado."
+    puts "Nenhum contato cadastrado ainda. Adicione um com a opção 1!"
   else
-    contacts.each_with_index do |contact, index|
-      puts "#{index + 1}. #{contact.name} - #{contact.phone} - #{contact.email}"
+    puts "Lista de contatos:"
+    contacts.each do |contact|
+      puts "ID: #{contact.id} - #{contact.name} - #{contact.phone} - #{contact.email}"
     end
   end
 end
 
 def search_contact
-  print "Digite o nome para buscar: "
-  search_term = gets.chomp
+  print "Digite o nome para buscar (ou deixe em branco para cancelar): "
+  search_term = gets.chomp.strip
+  if search_term.empty?
+    puts "Busca cancelada."
+    return
+  end
   results = Contact.where("name LIKE ?", "%#{search_term}%")
   if results.empty?
-    puts "Nenhum contato encontrado."
+    puts "Nenhum contato encontrado com '#{search_term}'."
   else
-    results.each_with_index do |contact, index|
-      puts "#{index + 1}. #{contact.name} - #{contact.phone} - #{contact.email}"
+    puts "Resultados da busca por '#{search_term}':"
+    results.each do |contact|
+      puts "ID: #{contact.id} - #{contact.name} - #{contact.phone} - #{contact.email}"
     end
   end
 end
 
 def edit_contact
-    contacts = Contact.all
-    if contacts.empty?
-      puts "Nenhum contato cadastrado."
-      return
-    end
-  
-    puts "Contatos disponíveis:"
-    contacts.each do |contact|
-      puts "ID: #{contact.id} - #{contact.name} - #{contact.phone} - #{contact.email}"
-    end
-    print "Digite o ID do contato para editar: "
-    id = gets.chomp.to_i
-    contact = Contact.find_by(id: id)
-  
-    if contact.nil?
-      puts "Contato não encontrado."
-      return
-    end
-  
-    print "Novo nome (deixe em branco para manter '#{contact.name}'): "
-    name = gets.chomp
-    print "Novo telefone (deixe em branco para manter '#{contact.phone}'): "
-    phone = gets.chomp
-    print "Novo e-mail (deixe em branco para manter '#{contact.email}'): "
-    email = gets.chomp
-  
-    contact.update(
-      name: name.empty? ? contact.name : name,
-      phone: phone.empty? ? contact.phone : phone,
-      email: email.empty? ? contact.email : email
-    )
-    puts "Contato atualizado com sucesso!"
-  end
-  
-  def delete_contact
-    contacts = Contact.all
-    if contacts.empty?
-      puts "Nenhum contato cadastrado."
-      return
-    end
-  
-    puts "Contatos disponíveis:"
-    contacts.each do |contact|
-      puts "ID: #{contact.id} - #{contact.name} - #{contact.phone} - #{contact.email}"
-    end
-    print "Digite o ID do contato para deletar: "
-    id = gets.chomp.to_i
-    contact = Contact.find_by(id: id)
-  
-    if contact.nil?
-      puts "Contato não encontrado."
-      return
-    end
-  
-    contact.destroy
-    puts "Contato deletado com sucesso!"
+  contacts = Contact.all
+  if contacts.empty?
+    puts "Nenhum contato cadastrado para editar."
+    return
   end
 
+  list_contacts
+  print "Digite o ID do contato para editar (ou deixe em branco para cancelar): "
+  id_input = gets.chomp.strip
+  if id_input.empty?
+    puts "Edição cancelada."
+    return
+  end
+
+  unless valid_number?(id_input)
+    puts "Erro: Digite um número válido para o ID."
+    return
+  end
+
+  id = id_input.to_i
+  contact = Contact.find_by(id: id)
+  if contact.nil?
+    puts "Erro: Contato com ID #{id} não encontrado."
+    return
+  end
+
+  print "Novo nome (deixe em branco para manter '#{contact.name}'): "
+  name = gets.chomp.strip
+  print "Novo telefone (deixe em branco para manter '#{contact.phone}'): "
+  phone = gets.chomp.strip
+  print "Novo e-mail (deixe em branco para manter '#{contact.email}'): "
+  email = gets.chomp.strip
+
+  contact.update(
+    name: name.empty? ? contact.name : name,
+    phone: phone.empty? ? contact.phone : phone,
+    email: email.empty? ? contact.email : email
+  )
+  puts "Contato ID #{id} atualizado com sucesso!"
+end
+
+def delete_contact
+  contacts = Contact.all
+  if contacts.empty?
+    puts "Nenhum contato cadastrado para deletar."
+    return
+  end
+
+  list_contacts
+  print "Digite o ID do contato para deletar (ou deixe em branco para cancelar): "
+  id_input = gets.chomp.strip
+  if id_input.empty?
+    puts "Exclusão cancelada."
+    return
+  end
+
+  unless valid_number?(id_input)
+    puts "Erro: Digite um número válido para o ID."
+    return
+  end
+
+  id = id_input.to_i
+  contact = Contact.find_by(id: id)
+  if contact.nil?
+    puts "Erro: Contato com ID #{id} não encontrado."
+    return
+  end
+
+  contact.destroy
+  puts "Contato ID #{id} deletado com sucesso!"
+end
+
 def export_to_csv
+  contacts = Contact.all
+  if contacts.empty?
+    puts "Nenhum contato para exportar."
+    return
+  end
+
   require 'csv'
   file_path = "contatos.csv"
   CSV.open(file_path, "w") do |csv|
-    csv << ["Nome", "Telefone", "E-mail"] # Cabeçalho
-    Contact.all.each do |contact|
+    csv << ["Nome", "Telefone", "E-mail"]
+    contacts.each do |contact|
       csv << [contact.name, contact.phone, contact.email]
     end
   end
-  puts "Contatos exportados para #{file_path}!"
+  puts "Contatos exportados para '#{file_path}' com sucesso!"
 end
 
 # Loop principal
 loop do
   display_menu
-  option = gets.chomp.to_i
+  option_input = gets.chomp.strip
+
+  unless valid_number?(option_input)
+    puts "Erro: Digite um número entre 1 e 7."
+    next
+  end
+
+  option = option_input.to_i
+  unless (1..7).include?(option)
+    puts "Erro: Opção inválida! Escolha entre 1 e 7."
+    next
+  end
 
   case option
-  when 1
-    add_contact
-  when 2
-    list_contacts
-  when 3
-    search_contact
-  when 4
-    edit_contact
-  when 5
-    delete_contact
-  when 6
-    export_to_csv
+  when 1 then add_contact
+  when 2 then list_contacts
+  when 3 then search_contact
+  when 4 then edit_contact
+  when 5 then delete_contact
+  when 6 then export_to_csv
   when 7
-    puts "Saindo..."
+    puts "Saindo do LinkSaver. Até logo!"
     break
-  else
-    puts "Opção inválida! Tente novamente."
   end
 end
