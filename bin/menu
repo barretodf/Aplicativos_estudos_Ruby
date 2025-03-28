@@ -65,7 +65,8 @@ def list_contacts
     puts "\nLista de contatos (Total: #{contacts.count}):"
     puts "-" * 50
     contacts.each do |contact|
-      puts "ID: #{contact.id.to_s.rjust(3)} | Nome: #{contact.name.ljust(20)} | Telefone: #{contact.phone.ljust(15)} | E-mail: #{contact.email}"
+      name_display = contact.name.length > 20 ? "#{contact.name[0..16]}..." : contact.name
+      puts "ID: #{contact.id.to_s.rjust(3)} | Nome: #{name_display.ljust(20)} | Telefone: #{contact.phone.ljust(15)} | E-mail: #{contact.email}"
     end
     puts "-" * 50
   end
