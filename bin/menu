@@ -2,7 +2,7 @@
 require File.expand_path("../config/environment", __dir__)
 
 def display_menu
-  puts="\n=== LinkSaver - Gerenciamento de Contatos ==="
+  puts "\n=== LinkSaver - Gerenciamento de Contatos ==="
   puts "1. Adicionar contato"
   puts "2. Listar contatos"
   puts "3. Buscar contato"
@@ -144,19 +144,50 @@ def edit_contact
     return
   end
 
+  puts "\nEditando: #{contact.name} - #{contact.phone} - #{contact.email}"
   print "Novo nome (deixe em branco para manter '#{contact.name}'): "
-  name = gets.chomp.strip
-  print "Novo telefone (deixe em branco para manter '#{contact.phone}'): "
-  phone = gets.chomp.strip
-  print "Novo e-mail (deixe em branco para manter '#{contact.email}'): "
-  email = gets.chomp.strip
+  name_input = gets.chomp.strip
+  new_name = name_input.empty? ? contact.name : name_input
 
-  contact.update(
-    name: name.empty? ? contact.name : name,
-    phone: phone.empty? ? contact.phone : phone,
-    email: email.empty? ? contact.email : email
-  )
-  puts "Contato ID #{id} atualizado com sucesso!"
+  if new_name != contact.name && Contact.exists?(name: new_name)
+    print "Já existe um contato com o nome '#{new_name}'. Deseja continuar? (s/n): "
+    return unless gets.chomp.downcase == 's'
+  end
+
+  print "Novo telefone (deixe em branco para manter '#{contact.phone}', 8-15 dígitos): "
+  phone_input = gets.chomp.strip.gsub(/\D/, '')
+  new_phone = if phone_input.empty?
+                contact.phone
+              elsif phone_input.length.between?(8, 15)
+                mid = phone_input.length / 2
+                "#{phone_input[0...mid]}-#{phone_input[mid..-1]}"
+              else
+                puts "Aviso: Telefone inválido (mantido como digitado)."
+                phone_input
+              end
+
+  print "Novo e-mail (deixe em branco para manter '#{contact.email}'): "
+  email_input = gets.chomp.strip
+  new_email = email_input.empty? ? contact.email : email_input
+
+  if new_email != contact.email && !new_email.empty? && Contact.exists?(email: new_email)
+    print "Já existe um contato com o e-mail '#{new_email}'. Deseja continuar? (s/n): "
+    return unless gets.chomp.downcase == 's'
+  end
+
+  puts "\nAlterações propostas:"
+  puts "Nome: #{new_name}"
+  puts "Telefone: #{new_phone}"
+  puts "E-mail: #{new_email}"
+  print "Confirmar alterações? (s/n): "
+  return puts "Edição cancelada." unless gets.chomp.downcase == 's'
+
+  contact.update(name: new_name, phone: new_phone, email: new_email)
+  if contact.errors.any?
+    puts "Erro ao atualizar: #{contact.errors.full_messages.join(', ')}"
+  else
+    puts "Contato atualizado com sucesso: #{contact.name} - #{contact.phone} - #{contact.email}"
+  end
 end
 
 def delete_contact
