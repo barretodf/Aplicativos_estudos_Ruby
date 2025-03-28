@@ -2,7 +2,7 @@
 require File.expand_path("../config/environment", __dir__)
 
 def display_menu
-  puts "\n=== LinkSaver - Gerenciamento de Contatos ==="
+  puts="\n=== LinkSaver - Gerenciamento de Contatos ==="
   puts "1. Adicionar contato"
   puts "2. Listar contatos"
   puts "3. Buscar contato"
@@ -73,20 +73,47 @@ def list_contacts
 end
 
 def search_contact
-  print "Digite o nome para buscar (ou deixe em branco para cancelar): "
+  puts "\nEscolha o campo para buscar:"
+  puts "1. Nome"
+  puts "2. Telefone"
+  puts "3. E-mail"
+  print "Digite o número do campo (1-3, ou deixe em branco para cancelar): "
+  field_input = gets.chomp.strip
+
+  if field_input.empty?
+    puts "Busca cancelada."
+    return
+  end
+
+  unless valid_number?(field_input) && (1..3).include?(field_input.to_i)
+    puts "Erro: Escolha um número válido entre 1 e 3."
+    return
+  end
+
+  field = case field_input.to_i
+          when 1 then :name
+          when 2 then :phone
+          when 3 then :email
+          end
+
+  print "Digite o termo para buscar no campo '#{field}' (ou deixe em branco para cancelar): "
   search_term = gets.chomp.strip
   if search_term.empty?
     puts "Busca cancelada."
     return
   end
-  results = Contact.where("name LIKE ?", "%#{search_term}%")
+
+  results = Contact.where("#{field} LIKE ?", "%#{search_term}%")
   if results.empty?
-    puts "Nenhum contato encontrado com '#{search_term}'."
+    puts "Nenhum contato encontrado com '#{search_term}' no campo '#{field}'."
   else
-    puts "Resultados da busca por '#{search_term}':"
+    puts "\nResultados da busca por '#{search_term}' no campo '#{field}' (Total: #{results.count}):"
+    puts "-" * 50
     results.each do |contact|
-      puts "ID: #{contact.id} - #{contact.name} - #{contact.phone} - #{contact.email}"
+      name_display = contact.name.length > 20 ? "#{contact.name[0..16]}..." : contact.name
+      puts "ID: #{contact.id.to_s.rjust(3)} | Nome: #{name_display.ljust(20)} | Telefone: #{contact.phone.ljust(15)} | E-mail: #{contact.email}"
     end
+    puts "-" * 50
   end
 end
 
