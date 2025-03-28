@@ -232,15 +232,21 @@ def export_to_csv
     return
   end
 
+  require 'date'
+  default_filename = "contatos_#{Date.today.strftime('%d-%m-%Y')}.csv"
+  print "Digite o nome do arquivo para exportar (padrão: '#{default_filename}', pressione Enter para usar o padrão): "
+  filename_input = gets.chomp.strip
+  filename = filename_input.empty? ? default_filename : "#{filename_input}.csv"
+
   require 'csv'
-  file_path = "contatos.csv"
+  file_path = File.expand_path(filename)
   CSV.open(file_path, "w") do |csv|
     csv << ["Nome", "Telefone", "E-mail"]
     contacts.each do |contact|
       csv << [contact.name, contact.phone, contact.email]
     end
   end
-  puts "Contatos exportados para '#{file_path}' com sucesso!"
+  puts "Contatos exportados com sucesso para: #{file_path}"
 end
 
 loop do
