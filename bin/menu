@@ -217,8 +217,12 @@ def delete_contact
     return
   end
 
+  puts "\nContato a ser deletado: #{contact.name} - #{contact.phone} - #{contact.email}"
+  print "Tem certeza que deseja deletar este contato? (s/n): "
+  return puts "Exclusão cancelada." unless gets.chomp.downcase == 's'
+
   contact.destroy
-  puts "Contato ID #{id} deletado com sucesso!"
+  puts "Contato '#{contact.name}' (ID: #{id}) deletado com sucesso!"
 end
 
 def export_to_csv
